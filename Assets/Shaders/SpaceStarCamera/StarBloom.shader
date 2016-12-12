@@ -157,7 +157,7 @@
             }
 
 
-			// Large effect
+			// Large light bloom effect
 			GrabPass {                        
                 Tags { "LightMode" = "Always" }
             }
@@ -204,8 +204,8 @@
 					if(length(_SunPosition.xy - i.vertex.xy) < _CircleBlurSize && _SunPosition.x > 0)
 					{
 						
-						half4 pixelColor = lerp(_StarColor, col, (length(_SunPosition.xy - i.vertex.xy)*1.2)/_CircleBlurSize);
-						return lerp(pixelColor, col, (length(_SunPosition.xy - i.vertex.xy)*1.2)/_CircleBlurSize);
+						half4 pixelColor = lerp(_StarColor, col, (length(_SunPosition.xy - i.vertex.xy))/_CircleBlurSize);
+						return lerp(pixelColor, col, (length(_SunPosition.xy - i.vertex.xy))/_CircleBlurSize);
 					}
 					return col;
                 }
