@@ -42,19 +42,22 @@
 						float4 uvgrab : TEXCOORD0;
 					};
 					float _CircleBlurSize;
+					float4 _SunPosition;
+
+					float _CirclePixelSize;
 					v2f vert(appdata_t v) {
 						v2f o;
 
 						float4 lengthPixelVertex = o.vertex;
 						
 						o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
-						
-						half3 norm = mul((half3x3)UNITY_MATRIX_IT_MV, v.normal);
+						_SunPosition = mul(UNITY_MATRIX_MVP, _SunPosition);
+
+						half3 norm = normalize(mul((half3x3)UNITY_MATRIX_IT_MV, normalize(v.normal)));
 						half2 offset = TransformViewToProjection(norm.xy);
 						o.vertex.xy += offset * o.vertex.z * _CircleBlurSize;
-						lengthPixelVertex = o.vertex;
-						lengthPixelVertex.x -= _CircleBlurSize;
-						_CircleBlurSize = length(o.vertex - lengthPixelVertex);
+						_CirclePixelSize = length(_SunPosition.xy - o.vertex.xy);
+
 						#if UNITY_UV_STARTS_AT_TOP
 						float scale = -1.0;
 						#else
@@ -67,16 +70,21 @@
 
 					sampler2D _GrabTexture;
 					float4 _GrabTexture_TexelSize;
-					float4 _SunPosition;
+					
 					fixed4 _StarColor;
 					
 					float _Size;
 
 					half4 frag(v2f i) : COLOR{
-
 						half4 col = tex2Dproj(_GrabTexture, UNITY_PROJ_COORD(i.uvgrab));
+						
 
-						half4 sum = half4(0,0,0,0);
+						if (length(_SunPosition - i.vertex) < _CirclePixelSize)
+						{
+							col = (0, 0, 0, 1);
+							return col;
+						}
+						half4 sum = half4(0,0,0,1);
 						#define GRABPIXEL(weight,kernelx) tex2Dproj( _GrabTexture, UNITY_PROJ_COORD(float4(i.uvgrab.x + _GrabTexture_TexelSize.x * kernelx*_Size, i.uvgrab.y, i.uvgrab.z, i.uvgrab.w))) * weight
 						sum += GRABPIXEL(0.05, -4.0);
 						sum += GRABPIXEL(0.09, -3.0);
@@ -102,7 +110,7 @@
 						sum += GRABPIXELY(0.05, +4.0);
 
 
-						sum = lerp(sum/2, col, length(_SunPosition.xy - i.vertex.xy) / _CircleBlurSize);
+						sum = lerp(sum/2, col, length(_SunPosition - i.vertex) / _CirclePixelSize);
 						return sum;
 
 						//sum = lerp(sum, col, length(_SunPosition.xy - i.vertex.xy) / _CircleBlurSize);
